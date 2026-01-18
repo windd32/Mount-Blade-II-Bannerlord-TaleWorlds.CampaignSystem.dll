@@ -1,0 +1,109 @@
+инструмент dnSpy-net-win64
+E:\SteamLibrary\steamapps\common\Mount & Blade II Bannerlord\bin\Win64_Shipping_Client
+TaleWorlds.CampaignSystem.dll
+
+
+https://forums.taleworlds.com/index.php?threads/campaign-map-speed.446410/
+скорость на кнопке х2
+Следуйте этим инструкциям:
+Нажмите на значок лупы вверху или перейдите в меню «Редактировать» > «Поиск сборок».
+В строке поиска введите "SpeedUpMultiplier" без кавычек.
+Щелкните правой кнопкой мыши по SpeedUpMultiplier в окне результатов и выберите "Анализировать".
+В анализаторе щелкните стрелки раскрывающегося списка «Установить» > «Используется» и дважды щелкните метод «OnLoad».
+В методе OnLoad щелкните правой кнопкой мыши по строке кода, содержащей "this.SpeedUpMultiplier = 4f;", и выберите "Редактировать инструкции IL...".
+Замените число 4 на 20 и нажмите «ОК» в правом нижнем углу.
+Перейдите в меню «Файл» > «Сохранить модуль» и сохраните изменения. Закройте dnSpy, и всё должно работать.
+
+
+30 достаточно но очень быстро 
+// Token: 0x060002B6 RID: 694 RVA: 0x00014298 File Offset: 0x00012498
+		[LoadInitializationCallback]
+		private void OnLoad(MetaData metaData, ObjectLoadData objectLoadData)
+		{
+			this._campaignEntitySystem = new EntitySystem<CampaignEntityComponent>();
+			this.PlayerFormationPreferences = this._playerFormationPreferences.GetReadOnlyDictionary<CharacterObject, FormationClass>();
+			this.SpeedUpMultiplier = 4f;
+			if (this.UniqueGameId == null && MBSaveLoad.IsUpdatingGameVersion && MBSaveLoad.LastLoadedGameVersion < ApplicationVersion.FromString("v1.2.2", 0))
+			{
+				this.UniqueGameId = "oldSave";
+			}
+			if (MBSaveLoad.LastLoadedGameVersion < ApplicationVersion.FromString("v1.3.0", 0))
+			{
+				if (this._previouslyUsedModules == null)
+				{
+					this._previouslyUsedModules = new MBList<string>();
+				}
+				MBList<string> mblist = new MBList<string>(this._previouslyUsedModules);
+				this._previouslyUsedModules.Clear();
+				if (Enumerable.Any<string>(mblist))
+				{
+					this._previouslyUsedModules.Add(string.Join(MBSaveLoad.ModuleCodeSeperator.ToString(), Enumerable.Select<string, string>(mblist, (string x) => x + MBSaveLoad.ModuleVersionSeperator.ToString() + ApplicationVersion.Empty.ToString())));
+				}
+			}
+
+базовая скорость(уже х4)
+// Token: 0x060002C4 RID: 708
+		private void TickMapTime(float realDt)
+		{
+			float num = 0f;
+			float speedUpMultiplier = this.SpeedUpMultiplier;
+			float num2 = 2f * realDt;
+			this.IsMainPartyWaiting = MobileParty.MainParty.ComputeIsWaiting();
+			switch (this.TimeControlMode)
+			{
+			case CampaignTimeControlMode.Stop:
+			case CampaignTimeControlMode.FastForwardStop:
+				break;
+			case CampaignTimeControlMode.UnstoppablePlay:
+				num = num2;
+				break;
+			case CampaignTimeControlMode.UnstoppableFastForward:
+			case CampaignTimeControlMode.UnstoppableFastForwardForPartyWaitTime:
+				num = num2 * speedUpMultiplier;
+				break;
+			case CampaignTimeControlMode.StoppablePlay:
+				if (!this.IsMainPartyWaiting)
+				{
+					num = num2;
+				}
+				break;
+			case CampaignTimeControlMode.StoppableFastForward:
+				if (!this.IsMainPartyWaiting)
+				{
+					num = num2 * speedUpMultiplier;
+				}
+				break;
+			default:
+				throw new ArgumentOutOfRangeException();
+			}
+			this._dt = num;
+			this.MapTimeTracker.Tick(4320f * num);
+		}
+
+2️⃣ Количество мастерских
+📦 DLL: TaleWorlds.CampaignSystem.dll
+📍 Класс: DefaultWorkshopModel
+📍 Метод: GetMaxWorkshopCountForClanTier
+		// Token: 0x06001EA7 RID: 7847 RVA: 0x00012DE6 File Offset: 0x00010FE6
+		public override int GetMaxWorkshopCountForClanTier(int tier)
+		{
+			return tier + 1;
+		}
+
+
+прокачка
+		// Token: 0x0600199F RID: 6559 RVA: 0x0009A650 File Offset: 0x00098850
+		public override ExplainedNumber CalculateLearningLimit(IReadOnlyPropertyOwner<CharacterAttribute> characterAttributes, int focusValue, SkillObject skill, bool includeDescriptions = false)
+		{
+			float num = 0f;
+			ExplainedNumber result = new ExplainedNumber(0f, includeDescriptions, null);
+			foreach (CharacterAttribute attribute in skill.Attributes)
+			{
+				num += (float)characterAttributes.GetPropertyValue(attribute);
+			}
+			float num2 = num / (float)skill.Attributes.Length;
+			result.Add(Math.Max(0f, (num2 - 1f) * 10f), DefaultCharacterDevelopmentModel._attributeEffectText, null);
+			result.Add((float)(focusValue * 30), DefaultCharacterDevelopmentModel._skillFocusText, null);
+			result.LimitMin(0f);
+			return result;
+		}
