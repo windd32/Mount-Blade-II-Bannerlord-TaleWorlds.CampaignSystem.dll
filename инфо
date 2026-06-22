@@ -4,6 +4,40 @@ TaleWorlds.CampaignSystem.dll
 
 
 https://forums.taleworlds.com/index.php?threads/campaign-map-speed.446410/
+
+private void OnLoad(MetaData metaData, ObjectLoadData objectLoadData)
+		{
+			this._campaignEntitySystem = new EntitySystem<CampaignEntityComponent>();
+			this.PlayerFormationPreferences = this._playerFormationPreferences.GetReadOnlyDictionary<CharacterObject, FormationClass>();
+			this.SpeedUpMultiplier = 4f;
+			if (this.UniqueGameId == null && MBSaveLoad.IsUpdatingGameVersion && MBSaveLoad.LastLoadedGameVersion < ApplicationVersion.FromString("v1.2.2", 0))
+			{
+				this.UniqueGameId = "oldSave";
+			}
+			if (MBSaveLoad.LastLoadedGameVersion < ApplicationVersion.FromString("v1.3.0", 0))
+			{
+				if (this._previouslyUsedModules == null)
+				{
+					this._previouslyUsedModules = new MBList<string>();
+				}
+				MBList<string> source = new MBList<string>(this._previouslyUsedModules);
+				this._previouslyUsedModules.Clear();
+				if (source.Any<string>())
+				{
+					this._previouslyUsedModules.Add(string.Join(MBSaveLoad.ModuleCodeSeperator.ToString(), from x in source
+					select x + MBSaveLoad.ModuleVersionSeperator.ToString() + ApplicationVersion.Empty.ToString()));
+				}
+			}
+			if (MBSaveLoad.IsUpdatingGameVersion && MBSaveLoad.LastLoadedGameVersion < ApplicationVersion.FromString("v1.3.0", 0))
+			{
+				this.UnlockedFigureheadsByMainHero = new List<Figurehead>();
+				this._customManagers = new List<ICustomSystemManager>();
+				this.MapMarkerManager = new MapMarkerManager();
+			}
+		}
+
+
+
 скорость на кнопке х2
 Следуйте этим инструкциям:
 Нажмите на значок лупы вверху или перейдите в меню «Редактировать» > «Поиск сборок».
